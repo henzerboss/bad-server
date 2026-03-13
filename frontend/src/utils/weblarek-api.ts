@@ -31,8 +31,9 @@ export type ApiListResponse<Type> = {
 }
 
 class Api {
-    private readonly baseUrl: string
+    protected readonly baseUrl: string
     protected options: RequestInit
+    private csrfToken: string | null = null
 
     constructor(baseUrl: string, options: RequestInit = {}) {
         this.baseUrl = baseUrl
@@ -41,6 +42,18 @@ class Api {
                 ...((options.headers as object) ?? {}),
             },
         }
+    }
+
+    // Запрашиваем CSRF токен перед мутирующими запросами
+    private async ensureCsrfToken() {
+        if (!this.csrfToken) {
+            const res = await fetch(`${this.baseUrl}/auth/csrf-token`, { credentials: 'include' });
+            if (res.ok) {
+                const data = await res.json();
+                this.csrfToken = data.csrfToken;
+            }
+        }
+        return this.csrfToken;
     }
 
     protected handleResponse<T>(response: Response): Promise<T> {
@@ -55,9 +68,21 @@ class Api {
 
     protected async request<T>(endpoint: string, options: RequestInit) {
         try {
+            const method = options.method || 'GET';
+            let headers = { ...this.options.headers, ...options.headers };
+
+            // Прикрепляем CSRF токен ко всем мутирующим запросам
+            if (method !== 'GET' && method !== 'HEAD') {
+                const token = await this.ensureCsrfToken();
+                if (token) {
+                    headers = { ...headers, 'CSRF-Token': token };
+                }
+            }
+
             const res = await fetch(`${this.baseUrl}${endpoint}`, {
                 ...this.options,
                 ...options,
+                headers
             })
             return await this.handleResponse<T>(res)
         } catch (error) {
@@ -299,7 +324,6 @@ export class WebLarekAPI extends Api implements IWebLarekAPI {
     }
 
     createProduct = (data: Omit<IProduct, '_id'>) => {
-        console.log(data)
         return this.requestWithRefresh<IProduct>('/product', {
             method: 'POST',
             body: JSON.stringify(data),

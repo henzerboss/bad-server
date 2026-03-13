@@ -1,14 +1,13 @@
 import { NextFunction, Request, Response } from 'express'
 import { constants } from 'http2'
 import { Error as MongooseError } from 'mongoose'
-import { join } from 'path'
+import { join, basename } from 'path'
 import BadRequestError from '../errors/bad-request-error'
 import ConflictError from '../errors/conflict-error'
 import NotFoundError from '../errors/not-found-error'
 import Product from '../models/product'
 import movingFile from '../utils/movingFile'
 
-// GET /product
 const getProducts = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { page = 1, limit = 5 } = req.query
@@ -27,13 +26,12 @@ const getProducts = async (req: Request, res: Response, next: NextFunction) => {
                 currentPage: Number(page),
                 pageSize: Number(limit),
             },
-        })
+        },)
     } catch (err) {
         return next(err)
     }
 }
 
-// POST /product
 const createProduct = async (
     req: Request,
     res: Response,
@@ -42,10 +40,11 @@ const createProduct = async (
     try {
         const { description, category, price, title, image } = req.body
 
-        // Переносим картинку из временной папки
+        // Используем basename для удаления пути ../
         if (image) {
+            const safeFileName = basename(image.fileName);
             movingFile(
-                image.fileName,
+                safeFileName,
                 join(__dirname, `../public/${process.env.UPLOAD_PATH_TEMP}`),
                 join(__dirname, `../public/${process.env.UPLOAD_PATH}`)
             )
@@ -72,8 +71,6 @@ const createProduct = async (
     }
 }
 
-// TODO: Добавить guard admin
-// PUT /product
 const updateProduct = async (
     req: Request,
     res: Response,
@@ -83,10 +80,11 @@ const updateProduct = async (
         const { productId } = req.params
         const { image } = req.body
 
-        // Переносим картинку из временной папки
+        // Используем basename для удаления пути ../
         if (image) {
+            const safeFileName = basename(image.fileName);
             movingFile(
-                image.fileName,
+                safeFileName,
                 join(__dirname, `../public/${process.env.UPLOAD_PATH_TEMP}`),
                 join(__dirname, `../public/${process.env.UPLOAD_PATH}`)
             )
@@ -120,8 +118,6 @@ const updateProduct = async (
     }
 }
 
-// TODO: Добавить guard admin
-// DELETE /product
 const deleteProduct = async (
     req: Request,
     res: Response,

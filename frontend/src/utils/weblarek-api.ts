@@ -47,7 +47,7 @@ class Api {
     // Запрашиваем CSRF токен перед мутирующими запросами
     private async ensureCsrfToken() {
         if (!this.csrfToken) {
-            const res = await fetch(`${this.baseUrl}/csrf-token`, { credentials: 'include' });
+            const res = await fetch(`${this.baseUrl}/auth/csrf-token`, { credentials: 'include' });
             if (res.ok) {
                 const data = await res.json();
                 this.csrfToken = data.csrfToken;

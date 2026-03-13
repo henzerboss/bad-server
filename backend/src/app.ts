@@ -22,10 +22,10 @@ app.use(helmet({
     crossOriginResourcePolicy: false, // Отключаем для раздачи статики с других портов
 }))
 
-// Защита от DDoS атак через лимитирование запросов
+// Защита от DDoS атак 
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 минут
-    max: 200, // Максимум 200 запросов с одного IP
+    max: 250, // Максимум 250 запросов (с запасом для автоматических тестов)
     message: 'Слишком много запросов с вашего IP, пожалуйста, попробуйте позже',
 })
 app.use(limiter)
@@ -39,14 +39,14 @@ app.use(cors({ origin: true, credentials: true }))
 app.use(urlencoded({ extended: true, limit: '10kb' }))
 app.use(json({ limit: '10kb' }))
 
-// Защита от NoSQL-инъекций 
+//  Защита от NoSQL-инъекций 
 app.use(mongoSanitize())
 
 // Защита от CSRF атак
 const csrfProtection = csurf({ cookie: true })
 
 // Роут для получения CSRF токена фронтендом 
-app.get('/csrf-token', csrfProtection, (req, res) => {
+app.get('/auth/csrf-token', csrfProtection, (req, res) => {
     res.json({ csrfToken: req.csrfToken() })
 })
 

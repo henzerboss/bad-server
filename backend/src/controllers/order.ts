@@ -27,7 +27,6 @@ export const getOrders = async (
 
         const filters: FilterQuery<Partial<IOrder>> = {}
 
-        // Проверяем тип, чтобы злоумышленник не передал объект $ne
         if (status && typeof status === 'string') {
             filters.status = status
         }
